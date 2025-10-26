@@ -28,6 +28,42 @@
             font-weight: 700;
             text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
             letter-spacing: 0.08em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: center;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 1.3rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffeefc;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .back-link:hover,
+        .back-link:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.32);
+            outline: none;
         }
 
         main {
@@ -213,7 +249,12 @@
     </style>
 </head>
 <body>
-    <header>Mini's Fruit Ninja Dojo</header>
+    <header>
+        <nav class="top-bar" aria-label="Page navigation">
+            <a class="back-link" href="index.html">⟵ Back to Mini's App Dashboard</a>
+        </nav>
+        <h1>Mini's Fruit Ninja Dojo</h1>
+    </header>
     <main>
         <div class="game-shell">
             <div class="hud" role="status" aria-live="polite">
