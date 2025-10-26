@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mini's Painter</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff6fb;
+            background-image: url("unicorn.png");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        header {
+            background: linear-gradient(90deg, #ba9dff, #ff8ccd);
+            color: #2c0f2b;
+            text-align: center;
+            padding: 1.6rem 1rem;
+            font-size: clamp(2rem, 4vw, 2.6rem);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2.5rem 1rem 3rem;
+        }
+
+        .paint-app {
+            width: min(1100px, 100%);
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 28px;
+            box-shadow: 0 25px 60px rgba(92, 55, 120, 0.25);
+            padding: clamp(1.5rem, 3vw, 2.5rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .toolbar,
+        .actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 1.25rem;
+            align-items: center;
+        }
+
+        .toolbar {
+            justify-content: space-between;
+        }
+
+        .tool-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .tool-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #653674;
+            font-weight: 700;
+        }
+
+        .tool-buttons,
+        .palette,
+        .sticker-options,
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tool-button,
+        .action-button,
+        .palette button,
+        .sticker-button {
+            border: none;
+            border-radius: 14px;
+            padding: 0.55rem 0.95rem;
+            background: rgba(255, 255, 255, 0.85);
+            color: #3b1b45;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(95, 43, 121, 0.18);
+            transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .tool-button:is(:hover, :focus-visible),
+        .action-button:is(:hover, :focus-visible),
+        .palette button:is(:hover, :focus-visible),
+        .sticker-button:is(:hover, :focus-visible) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(95, 43, 121, 0.24);
+            outline: none;
+        }
+
+        .tool-button.is-active,
+        .action-button.is-active,
+        .palette button.is-active,
+        .sticker-button.is-active {
+            background: linear-gradient(90deg, #ffb7e6, #a99cff);
+            color: #2f1038;
+        }
+
+        .palette button,
+        .sticker-button {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: 14px;
+        }
+
+        .palette button {
+            border: 2px solid rgba(255, 255, 255, 0.85);
+        }
+
+        .palette button:focus-visible,
+        .sticker-button:focus-visible,
+        .tool-button:focus-visible,
+        .action-button:focus-visible {
+            box-shadow:
+                0 0 0 3px rgba(255, 255, 255, 0.95),
+                0 0 0 6px rgba(169, 156, 255, 0.5);
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            width: 46px;
+            height: 46px;
+            border: none;
+            padding: 0;
+            background: none;
+            border-radius: 14px;
+            cursor: pointer;
+        }
+
+        .size-control {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .size-control input[type="range"] {
+            width: 160px;
+        }
+
+        .canvas-wrapper {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 240, 255, 0.85));
+            border-radius: 22px;
+            padding: clamp(1rem, 2vw, 1.5rem);
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+        }
+
+        canvas {
+            display: block;
+            width: min(100%, 960px);
+            height: auto;
+            border-radius: 18px;
+            border: 4px solid rgba(104, 74, 147, 0.28);
+            background: #ffffff;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .actions-row {
+            justify-content: space-between;
+            padding-top: 0.5rem;
+            border-top: 1px dashed rgba(105, 64, 120, 0.25);
+        }
+
+        .actions-row .action-buttons {
+            gap: 0.75rem;
+        }
+
+        .hint {
+            font-size: 0.95rem;
+            color: #5a3c6b;
+        }
+
+        footer {
+            text-align: center;
+            color: #2b0f1d;
+            font-weight: 500;
+            padding: 0 0 2rem;
+            font-size: 1.05rem;
+        }
+
+        @media (max-width: 900px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+
+            .actions-row .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>Mini's Painter</header>
+    <main>
+        <section class="paint-app" aria-label="Painter playground">
+            <div class="toolbar">
+                <div class="tool-block" aria-label="Drawing tools">
+                    <span class="tool-title">Tools</span>
+                    <div class="tool-buttons" role="toolbar" aria-label="Pick a tool">
+                        <button class="tool-button is-active" data-tool="brush" type="button">Brush</button>
+                        <button class="tool-button" data-tool="eraser" type="button">Eraser</button>
+                        <button class="tool-button" data-tool="line" type="button">Line</button>
+                        <button class="tool-button" data-tool="rectangle" type="button">Rectangle</button>
+                        <button class="tool-button" data-tool="circle" type="button">Circle</button>
+                        <button class="tool-button" data-tool="sticker" type="button">Stickers</button>
+                    </div>
+                </div>
+                <div class="tool-block" aria-label="Brush setup">
+                    <span class="tool-title">Brush &amp; Color</span>
+                    <div class="palette" role="listbox" aria-label="Choose a color">
+                        <button type="button" class="is-active" data-color="#ff5da2" style="background: #ff5da2" aria-label="Bubblegum pink"></button>
+                        <button type="button" data-color="#ffb800" style="background: #ffb800" aria-label="Sunny yellow"></button>
+                        <button type="button" data-color="#6b5bff" style="background: #6b5bff" aria-label="Violet"></button>
+                        <button type="button" data-color="#27c1ff" style="background: #27c1ff" aria-label="Sky blue"></button>
+                        <button type="button" data-color="#00c97d" style="background: #00c97d" aria-label="Mint green"></button>
+                        <button type="button" data-color="#ff6f6f" style="background: #ff6f6f" aria-label="Coral red"></button>
+                    </div>
+                    <div class="color-picker-wrapper">
+                        <label for="custom-color">Custom</label>
+                        <input id="custom-color" type="color" value="#ff5da2" aria-label="Custom color picker" />
+                    </div>
+                    <div class="size-control">
+                        <label for="brush-size">Size</label>
+                        <input id="brush-size" type="range" min="2" max="60" value="14" />
+                        <span id="size-value">14</span>
+                    </div>
+                </div>
+                <div class="tool-block" aria-label="Stickers">
+                    <span class="tool-title">Sticker pals</span>
+                    <div class="sticker-options">
+                        <button type="button" class="sticker-button is-active" data-sticker="&#11088;" aria-label="Star sticker">&#11088;</button>
+                        <button type="button" class="sticker-button" data-sticker="&#127752;" aria-label="Rainbow sticker">&#127752;</button>
+                        <button type="button" class="sticker-button" data-sticker="&#128048;" aria-label="Bunny sticker">&#128048;</button>
+                        <button type="button" class="sticker-button" data-sticker="&#127799;" aria-label="Flower sticker">&#127799;</button>
+                        <button type="button" class="sticker-button" data-sticker="&#128171;" aria-label="Sparkle sticker">&#128171;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="art-board" width="960" height="600" aria-label="Drawing canvas"></canvas>
+            </div>
+            <div class="actions-row">
+                <p class="hint" id="hint-text">Tip: Use the brush to draw anything you imagine!</p>
+                <div class="action-buttons">
+                    <button class="action-button" id="fill-background" type="button">Fill Background</button>
+                    <button class="action-button" id="undo-btn" type="button">Undo</button>
+                    <button class="action-button" id="redo-btn" type="button">Redo</button>
+                    <button class="action-button" id="clear-btn" type="button">Clear</button>
+                    <button class="action-button" id="save-btn" type="button">Save Drawing</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer>Paint, play, and create your own little masterpieces.</footer>
+
+    <script>
+        const canvas = document.getElementById("art-board");
+        const ctx = canvas.getContext("2d");
+
+        const toolButtons = document.querySelectorAll(".tool-button");
+        const paletteButtons = document.querySelectorAll(".palette button");
+        const colorPicker = document.getElementById("custom-color");
+        const sizeSlider = document.getElementById("brush-size");
+        const sizeValue = document.getElementById("size-value");
+        const stickerButtons = document.querySelectorAll(".sticker-button");
+        const hintText = document.getElementById("hint-text");
+
+        const fillBackgroundBtn = document.getElementById("fill-background");
+        const undoBtn = document.getElementById("undo-btn");
+        const redoBtn = document.getElementById("redo-btn");
+        const clearBtn = document.getElementById("clear-btn");
+        const saveBtn = document.getElementById("save-btn");
+
+        const tools = {
+            brush: {
+                name: "Brush",
+                hint: "Brush: sketch freely with your favorite color.",
+            },
+            eraser: {
+                name: "Eraser",
+                hint: "Eraser: tidy up little slips.",
+            },
+            line: {
+                name: "Line",
+                hint: "Line: drag to make straight roads and borders.",
+            },
+            rectangle: {
+                name: "Rectangle",
+                hint: "Rectangle: build houses, books, and frames.",
+            },
+            circle: {
+                name: "Circle",
+                hint: "Circle: perfect for suns, bubbles, and wheels.",
+            },
+            sticker: {
+                name: "Stickers",
+                hint: "Stickers: tap to sprinkle fun shapes.",
+            },
+        };
+
+        let currentTool = "brush";
+        let drawing = false;
+        let strokeColor = "#ff5da2";
+        let brushSize = Number(sizeSlider.value);
+        let stickerSymbol = stickerButtons[0].dataset.sticker;
+        let backgroundColor = "#ffffff";
+        let startX = 0;
+        let startY = 0;
+        let baseSnapshot = null;
+        const history = {
+            undo: [],
+            redo: [],
+            max: 18,
+            save() {
+                try {
+                    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    this.undo.push(snapshot);
+                    if (this.undo.length > this.max) {
+                        this.undo.shift();
+                    }
+                    this.redo.length = 0;
+                    updateUndoRedo();
+                } catch (error) {
+                    console.error("History save failed", error);
+                }
+            },
+            undoAction() {
+                if (!this.undo.length) {
+                    return;
+                }
+                try {
+                    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    this.redo.push(current);
+                    const previous = this.undo.pop();
+                    ctx.putImageData(previous, 0, 0);
+                    updateUndoRedo();
+                } catch (error) {
+                    console.error("Undo failed", error);
+                }
+            },
+            redoAction() {
+                if (!this.redo.length) {
+                    return;
+                }
+                try {
+                    const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    this.undo.push(current);
+                    const restored = this.redo.pop();
+                    ctx.putImageData(restored, 0, 0);
+                    updateUndoRedo();
+                } catch (error) {
+                    console.error("Redo failed", error);
+                }
+            },
+        };
+
+        function initCanvas() {
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            history.undo.length = 0;
+            history.redo.length = 0;
+            updateUndoRedo();
+        }
+
+        function updateUndoRedo() {
+            undoBtn.disabled = history.undo.length === 0;
+            redoBtn.disabled = history.redo.length === 0;
+        }
+
+        function setActiveButton(buttons, newActive) {
+            buttons.forEach((button) => button.classList.remove("is-active"));
+            newActive.classList.add("is-active");
+        }
+
+        function setTool(toolName, button) {
+            currentTool = toolName;
+            setActiveButton(toolButtons, button);
+            hintText.textContent = tools[toolName].hint;
+            canvas.style.cursor = toolName === "sticker" ? "pointer" : "crosshair";
+        }
+
+        function setColor(color, targetButton) {
+            strokeColor = color;
+            if (colorPicker.value.toLowerCase() !== color.toLowerCase()) {
+                colorPicker.value = color;
+            }
+            paletteButtons.forEach((button) => {
+                button.classList.toggle("is-active", button === targetButton);
+            });
+        }
+
+        function setSticker(symbol, button) {
+            stickerSymbol = symbol;
+            setActiveButton(stickerButtons, button);
+        }
+
+        function updateBrushSize(value) {
+            brushSize = Number(value);
+            sizeValue.textContent = value;
+        }
+
+        function getCanvasPoint(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (event.clientX - rect.left) * scaleX,
+                y: (event.clientY - rect.top) * scaleY,
+            };
+        }
+
+        function beginStroke(event) {
+            event.preventDefault();
+            history.save();
+            const point = getCanvasPoint(event);
+            startX = point.x;
+            startY = point.y;
+            canvas.setPointerCapture(event.pointerId);
+            if (currentTool === "sticker") {
+                drawSticker(point.x, point.y);
+                canvas.releasePointerCapture(event.pointerId);
+                drawing = false;
+                return;
+            }
+            drawing = true;
+            baseSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            if (currentTool === "brush" || currentTool === "eraser") {
+                ctx.beginPath();
+                ctx.moveTo(point.x, point.y);
+                drawFree(point.x, point.y, true);
+            }
+        }
+
+        function moveStroke(event) {
+            if (!drawing) {
+                return;
+            }
+            const point = getCanvasPoint(event);
+            if (currentTool === "brush" || currentTool === "eraser") {
+                drawFree(point.x, point.y);
+            } else if (currentTool === "line") {
+                previewLine(point.x, point.y);
+            } else if (currentTool === "rectangle") {
+                previewRectangle(point.x, point.y);
+            } else if (currentTool === "circle") {
+                previewCircle(point.x, point.y);
+            }
+        }
+
+        function endStroke(event) {
+            if (currentTool === "sticker") {
+                return;
+            }
+            if (!drawing) {
+                return;
+            }
+            if (event) {
+                canvas.releasePointerCapture(event.pointerId);
+            }
+            drawing = false;
+            const point = getCanvasPoint(event);
+            if (currentTool === "line") {
+                previewLine(point.x, point.y, true);
+            } else if (currentTool === "rectangle") {
+                previewRectangle(point.x, point.y, true);
+            } else if (currentTool === "circle") {
+                previewCircle(point.x, point.y, true);
+            } else if (currentTool === "brush" || currentTool === "eraser") {
+                ctx.closePath();
+            }
+            baseSnapshot = null;
+        }
+
+        function drawFree(x, y, skipStroke) {
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = brushSize;
+            ctx.strokeStyle = currentTool === "eraser" ? backgroundColor : strokeColor;
+            if (!skipStroke) {
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function previewLine(x, y, finalize) {
+            ctx.putImageData(baseSnapshot, 0, 0);
+            ctx.beginPath();
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = brushSize;
+            ctx.strokeStyle = strokeColor;
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            if (finalize) {
+                ctx.closePath();
+            }
+        }
+
+        function previewRectangle(x, y, finalize) {
+            ctx.putImageData(baseSnapshot, 0, 0);
+            const width = x - startX;
+            const height = y - startY;
+            ctx.lineWidth = Math.max(2, brushSize / 2);
+            ctx.strokeStyle = strokeColor;
+            ctx.strokeRect(startX, startY, width, height);
+            if (finalize) {
+                ctx.stroke();
+            }
+        }
+
+        function previewCircle(x, y, finalize) {
+            ctx.putImageData(baseSnapshot, 0, 0);
+            const radius = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
+            ctx.beginPath();
+            ctx.lineWidth = Math.max(2, brushSize / 2);
+            ctx.strokeStyle = strokeColor;
+            ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            if (finalize) {
+                ctx.closePath();
+            }
+        }
+
+        function drawSticker(x, y) {
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.font = `${brushSize * 2}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+            ctx.fillText(stickerSymbol, x, y);
+            ctx.restore();
+        }
+
+        function fillBackground() {
+            history.save();
+            backgroundColor = strokeColor;
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function clearCanvas() {
+            history.save();
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveDrawing() {
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+            link.href = image;
+            link.download = `mini-paint-${stamp}.png`;
+            link.click();
+        }
+
+        toolButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setTool(button.dataset.tool, button);
+            });
+        });
+
+        paletteButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setColor(button.dataset.color, button);
+            });
+        });
+
+        colorPicker.addEventListener("input", (event) => {
+            setColor(event.target.value, colorPicker);
+        });
+
+        sizeSlider.addEventListener("input", (event) => {
+            updateBrushSize(event.target.value);
+        });
+
+        stickerButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setSticker(button.dataset.sticker, button);
+                setTool("sticker", document.querySelector('.tool-button[data-tool="sticker"]'));
+            });
+        });
+
+        fillBackgroundBtn.addEventListener("click", fillBackground);
+        clearBtn.addEventListener("click", clearCanvas);
+        saveBtn.addEventListener("click", saveDrawing);
+        undoBtn.addEventListener("click", () => history.undoAction());
+        redoBtn.addEventListener("click", () => history.redoAction());
+
+        canvas.addEventListener("pointerdown", beginStroke);
+        canvas.addEventListener("pointermove", moveStroke);
+        canvas.addEventListener("pointerup", endStroke);
+        canvas.addEventListener("pointerleave", endStroke);
+        canvas.addEventListener("pointercancel", endStroke);
+        canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+
+        window.addEventListener("keydown", (event) => {
+            if (event.ctrlKey || event.metaKey) {
+                if (event.key.toLowerCase() === "z") {
+                    event.preventDefault();
+                    if (event.shiftKey) {
+                        history.redoAction();
+                    } else {
+                        history.undoAction();
+                    }
+                } else if (event.key.toLowerCase() === "y") {
+                    event.preventDefault();
+                    history.redoAction();
+                }
+            }
+        });
+
+        initCanvas();
+        updateBrushSize(sizeSlider.value);
+        updateUndoRedo();
+    </script>
+</body>
+</html>

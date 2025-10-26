@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mini's Fruit Ninja</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 20% 0%, #2b0a1f 0%, #0d0614 55%, #02020b 100%);
+            color: #fef4ff;
+        }
+
+        header {
+            background: linear-gradient(90deg, #23123b, #40104d 35%, #7c104f 75%, #d13c4d 100%);
+            color: #ffeefc;
+            text-align: center;
+            padding: 1.45rem 1rem;
+            font-size: clamp(2.2rem, 5vw, 3rem);
+            font-weight: 700;
+            text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+            letter-spacing: 0.08em;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2.5rem 1.5rem 3rem;
+            background:
+                linear-gradient(160deg, rgba(15, 8, 30, 0.85), rgba(10, 7, 24, 0.9)),
+                repeating-linear-gradient(90deg, rgba(67, 33, 18, 0.75) 0, rgba(67, 33, 18, 0.75) 120px, rgba(46, 21, 11, 0.75) 120px, rgba(46, 21, 11, 0.75) 240px),
+                radial-gradient(circle at 50% 0%, rgba(255, 161, 53, 0.16), transparent 65%);
+            background-attachment: fixed;
+        }
+
+        .game-shell {
+            width: min(1160px, 100%);
+            background: linear-gradient(135deg, rgba(16, 12, 30, 0.86), rgba(39, 18, 36, 0.9));
+            border-radius: 32px;
+            box-shadow: 0 28px 70px rgba(8, 3, 17, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: clamp(1.5rem, 3vw, 2.6rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1.65rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem 1.5rem;
+            color: #f9f2ff;
+        }
+
+        .score-board {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .score-chip {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+            border-radius: 18px;
+            padding: 0.75rem 1.2rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+            font-size: 1.15rem;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+        }
+
+        .score-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .lives {
+            display: flex;
+            gap: 0.4rem;
+            font-size: 1.7rem;
+        }
+
+        .combo-banner {
+            min-height: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffe56f;
+            text-shadow: 0 0 12px rgba(255, 229, 111, 0.75);
+        }
+
+        .playfield-wrapper {
+            position: relative;
+            border-radius: 26px;
+            overflow: hidden;
+            box-shadow: inset 0 0 45px rgba(0, 0, 0, 0.45);
+        }
+
+        canvas {
+            display: block;
+            width: min(100%, 1020px);
+            height: auto;
+            background:
+                linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.1)),
+                repeating-linear-gradient(90deg, #2f1607 0, #2f1607 90px, #3a1a08 90px, #3a1a08 180px),
+                #2b1407;
+            cursor: none;
+            touch-action: none;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1.1rem;
+            background: rgba(4, 6, 18, 0.88);
+            color: #fef4ff;
+            text-align: center;
+            transition: opacity 200ms ease;
+            padding: 2rem 1.5rem;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .overlay h2 {
+            font-size: clamp(2rem, 5vw, 2.6rem);
+            margin: 0;
+            text-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+        }
+
+        .overlay p {
+            margin: 0;
+            max-width: 360px;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        .overlay .details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .overlay .details.hidden {
+            display: none;
+        }
+
+        .overlay button {
+            border: none;
+            border-radius: 14px;
+            padding: 0.85rem 1.8rem;
+            background: linear-gradient(90deg, #ff63b9, #4f5dff);
+            color: white;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(105, 85, 255, 0.35);
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .overlay button:hover,
+        .overlay button:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 26px rgba(105, 85, 255, 0.45);
+        }
+
+        .flash {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 65%);
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        footer {
+            text-align: center;
+            color: #2b0f1d;
+            font-weight: 500;
+            padding: 0 0 2rem;
+            font-size: 1.05rem;
+        }
+
+        @media (max-width: 860px) {
+            canvas {
+                cursor: default;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>Mini's Fruit Ninja Dojo</header>
+    <main>
+        <div class="game-shell">
+            <div class="hud" role="status" aria-live="polite">
+                <div class="score-board">
+                    <div class="score-chip" aria-label="Current score">
+                        <span>Score</span>
+                        <span class="score-value" id="score-value">0</span>
+                    </div>
+                    <div class="score-chip" aria-label="Best score">
+                        <span>Best</span>
+                        <span class="score-value" id="best-value">0</span>
+                    </div>
+                </div>
+                <div class="lives" aria-label="Remaining lives">
+                    <span data-heart="1">❤</span>
+                    <span data-heart="2">❤</span>
+                    <span data-heart="3">❤</span>
+                </div>
+            </div>
+            <div class="combo-banner" id="combo-banner"></div>
+            <div class="playfield-wrapper">
+                <canvas id="playfield" width="1020" height="600" aria-label="Fruit slicing area"></canvas>
+                <div class="flash" id="flash"></div>
+                <div class="overlay" id="overlay">
+                    <h2 id="overlay-title"></h2>
+                    <p id="overlay-message"></p>
+                    <div class="details hidden" id="overlay-details">
+                        <p>Score: <span id="final-score">0</span></p>
+                        <p>Best: <span id="final-best">0</span></p>
+                    </div>
+                    <button type="button" id="start-btn">Start Game</button>
+                    <small>Tip: Press space or enter to jump back in fast!</small>
+                </div>
+            </div>
+            <footer>Press P to pause and free the mouse, or tap anywhere to slice on touch devices.</footer>
+        </div>
+    </main>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const canvas = document.getElementById("playfield");
+            const ctx = canvas.getContext("2d");
+
+            const scoreValue = document.getElementById("score-value");
+            const bestValue = document.getElementById("best-value");
+            const finalScore = document.getElementById("final-score");
+            const finalBest = document.getElementById("final-best");
+            const comboBanner = document.getElementById("combo-banner");
+            const overlay = document.getElementById("overlay");
+            const overlayTitle = document.getElementById("overlay-title");
+            const overlayMessage = document.getElementById("overlay-message");
+            const overlayDetails = document.getElementById("overlay-details");
+            const startBtn = document.getElementById("start-btn");
+            const flash = document.getElementById("flash");
+            const heartNodes = [
+                document.querySelector('[data-heart="1"]'),
+                document.querySelector('[data-heart="2"]'),
+                document.querySelector('[data-heart="3"]'),
+            ];
+
+            const FRUIT_TYPES = [
+                { skin: "#53d86a", flesh: "#ff4f6b", seeds: "#321611", glow: "#ffd8e0" },
+                { skin: "#ff9f43", flesh: "#ffd66b", seeds: "#a05b12", glow: "#fffaaf" },
+                { skin: "#37c9ff", flesh: "#9bf4ff", seeds: "#176c85", glow: "#d8fbff" },
+                { skin: "#ff5daa", flesh: "#ffd2e8", seeds: "#7c254f", glow: "#ffe0f4" },
+                { skin: "#8a66ff", flesh: "#d5bdff", seeds: "#2c1d66", glow: "#e7dcff" },
+            ];
+
+            const GRAVITY = 980;
+            const SLICE_WINDOW = 140;
+            const MAX_TRAIL = 26;
+            const COMBO_WINDOW = 600;
+            const SPAWN_MIN = 1.05;
+            const SPAWN_MAX = 1.85;
+
+            const fruits = [];
+            const fragments = [];
+            const sparks = [];
+            const recentSlices = [];
+            const trail = [];
+
+            let spawnTimer = SPAWN_MIN;
+            let lastTime = 0;
+            let slicingActive = false;
+            let pointerLocked = false;
+            let cursorX = canvas.width * 0.5;
+            let cursorY = canvas.height * 0.75;
+            let comboTimer = 0;
+            let screenFlash = 0;
+            let mode = "intro";
+            let gameRunning = false;
+
+            const state = {
+                score: 0,
+                best: Number(localStorage.getItem("miniFruitBest") || 0),
+                lives: 3,
+            };
+
+            bestValue.textContent = state.best.toString();
+            scoreValue.textContent = "0";
+            updateLives();
+            showStartScreen();
+
+            function clamp(value, min, max) {
+                return Math.max(min, Math.min(max, value));
+            }
+
+            function randomRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function setOverlay(title, message, buttonText, showScores) {
+                overlayTitle.textContent = title;
+                overlayMessage.textContent = message;
+                startBtn.textContent = buttonText;
+                overlayDetails.classList.toggle("hidden", !showScores);
+                overlay.classList.remove("hidden");
+            }
+
+            function hideOverlay() {
+                overlay.classList.add("hidden");
+            }
+
+            function showStartScreen() {
+                mode = "intro";
+                gameRunning = false;
+                setOverlay(
+                    "Welcome to the Dojo!",
+                    "Slice the fruit with smooth swipes. Keep everything above the board!",
+                    "Start Game",
+                    false,
+                );
+            }
+
+            function resetState() {
+                fruits.length = 0;
+                fragments.length = 0;
+                sparks.length = 0;
+                recentSlices.length = 0;
+                trail.length = 0;
+                spawnTimer = randomRange(0.4, 0.9);
+                lastTime = 0;
+                screenFlash = 0;
+                comboTimer = 0;
+                state.score = 0;
+                state.lives = 3;
+                scoreValue.textContent = "0";
+                updateLives();
+                comboBanner.textContent = "";
+                flash.style.opacity = "0";
+                slicingActive = pointerLocked;
+                cursorX = canvas.width * 0.5;
+                cursorY = canvas.height * 0.75;
+            }
+
+            function startGame() {
+                resetState();
+                mode = "playing";
+                gameRunning = true;
+                hideOverlay();
+                tryPointerLock();
+                requestAnimationFrame(gameLoop);
+            }
+
+            function resumeGame() {
+                mode = "playing";
+                gameRunning = true;
+                comboBanner.textContent = "";
+                comboTimer = 0;
+                hideOverlay();
+                tryPointerLock();
+                lastTime = 0;
+                requestAnimationFrame(gameLoop);
+            }
+
+            function endGame() {
+                if (!gameRunning) {
+                    return;
+                }
+                mode = "gameover";
+                gameRunning = false;
+                comboBanner.textContent = "";
+                comboTimer = 0;
+                finalScore.textContent = state.score.toString();
+                finalBest.textContent = state.best.toString();
+                setOverlay(
+                    "Game Over!",
+                    "Great slicing! Tap play again to chase a new high score.",
+                    "Play Again",
+                    true,
+                );
+                document.exitPointerLock?.();
+            }
+
+            function pauseForPointerUnlock() {
+                if (!gameRunning) {
+                    return;
+                }
+                mode = "paused";
+                gameRunning = false;
+                setOverlay(
+                    "Paused",
+                    "Pointer unlocked. Click resume to keep slicing.",
+                    "Resume",
+                    false,
+                );
+            }
+
+            function updateScore(diff) {
+                state.score = Math.max(0, state.score + diff);
+                scoreValue.textContent = state.score.toString();
+                if (state.score > state.best) {
+                    state.best = state.score;
+                    bestValue.textContent = state.best.toString();
+                    localStorage.setItem("miniFruitBest", state.best);
+                }
+            }
+
+            function updateLives() {
+                heartNodes.forEach((heart, index) => {
+                    const active = index < state.lives;
+                    heart.style.opacity = active ? "1" : "0.25";
+                    heart.textContent = active ? "❤" : "♡";
+                });
+            }
+
+            function loseLife() {
+                if (!gameRunning) {
+                    return;
+                }
+                state.lives -= 1;
+                updateLives();
+                comboBanner.textContent = "Don't let them fall!";
+                comboTimer = 1;
+                if (state.lives <= 0) {
+                    endGame();
+                }
+            }
+
+            function tryPointerLock() {
+                if (canvas.requestPointerLock) {
+                    canvas.requestPointerLock();
+                } else {
+                    pointerLocked = false;
+                    slicingActive = true;
+                }
+            }
+
+            document.addEventListener("pointerlockchange", () => {
+                const locked = document.pointerLockElement === canvas;
+                pointerLocked = locked;
+                if (locked) {
+                    slicingActive = true;
+                    trail.length = 0;
+                } else {
+                    slicingActive = false;
+                    trail.length = 0;
+                    if (mode === "playing") {
+                        pauseForPointerUnlock();
+                    }
+                }
+            });
+
+            document.addEventListener("pointerlockerror", () => {
+                pointerLocked = false;
+                if (mode === "playing") {
+                    slicingActive = true;
+                }
+            });
+
+            function positionFromClient(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                    x: clamp((clientX - rect.left) * scaleX, 0, canvas.width),
+                    y: clamp((clientY - rect.top) * scaleY, 0, canvas.height),
+                };
+            }
+
+            function addTrailPoint(point) {
+                cursorX = point.x;
+                cursorY = point.y;
+                trail.push(point);
+                if (trail.length > MAX_TRAIL) {
+                    trail.splice(0, trail.length - MAX_TRAIL);
+                }
+            }
+
+            function handlePointerMove(event) {
+                if (pointerLocked || !slicingActive) {
+                    return;
+                }
+                const point = positionFromClient(event.clientX, event.clientY);
+                addTrailPoint({ ...point, time: performance.now() });
+            }
+
+            canvas.addEventListener("pointermove", handlePointerMove);
+
+            canvas.addEventListener("pointerenter", (event) => {
+                if (!pointerLocked) {
+                    slicingActive = true;
+                    const point = positionFromClient(event.clientX, event.clientY);
+                    addTrailPoint({ ...point, time: performance.now() });
+                }
+            });
+
+            canvas.addEventListener("pointerleave", () => {
+                if (!pointerLocked) {
+                    slicingActive = false;
+                    trail.length = 0;
+                }
+            });
+
+            document.addEventListener("mousemove", (event) => {
+                if (!pointerLocked || mode !== "playing") {
+                    return;
+                }
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const point = {
+                    x: clamp(cursorX + event.movementX * scaleX, 0, canvas.width),
+                    y: clamp(cursorY + event.movementY * scaleY, 0, canvas.height),
+                };
+                addTrailPoint({ ...point, time: performance.now() });
+            });
+
+            startBtn.addEventListener("click", () => {
+                if (mode === "playing") {
+                    return;
+                }
+                if (mode === "paused") {
+                    resumeGame();
+                } else {
+                    startGame();
+                }
+            });
+
+            window.addEventListener("keydown", (event) => {
+                if (event.key === " " && mode === "gameover") {
+                    event.preventDefault();
+                    startGame();
+                } else if (event.key.toLowerCase() === "p" && mode === "playing") {
+                    document.exitPointerLock?.();
+                } else if ((event.key === " " || event.key === "Enter") && mode === "intro") {
+                    event.preventDefault();
+                    startGame();
+                }
+            });
+
+            function spawnWave() {
+                const difficulty = 1 + Math.floor(state.score / 90);
+                const count = Math.min(5, 2 + Math.floor(Math.random() * difficulty));
+                const baseX = randomRange(200, canvas.width - 200);
+                for (let i = 0; i < count; i += 1) {
+                    const offset = i - (count - 1) / 2;
+                    spawnFruit(baseX + offset * 70, offset * 40);
+                }
+            }
+
+            function spawnFruit(initialX, velocityOffset = 0) {
+                const variant = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+                const radius = 34 + Math.random() * 10;
+                const x = clamp(initialX ?? randomRange(160, canvas.width - 160), 140, canvas.width - 140);
+                const y = canvas.height + radius + 20;
+                const vx = randomRange(-150, 150) + velocityOffset;
+                const vy = -(720 + Math.random() * 260);
+                const spin = randomRange(-0.0035, 0.0035);
+                fruits.push({ variant, x, y, vx, vy, radius, rotation: 0, spin, sliced: false });
+            }
+
+            function gameLoop(timestamp) {
+                if (!gameRunning) {
+                    return;
+                }
+                if (!lastTime) {
+                    lastTime = timestamp;
+                }
+                const delta = Math.min((timestamp - lastTime) / 1000, 0.05);
+                lastTime = timestamp;
+                update(delta);
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            function update(delta) {
+                spawnTimer -= delta;
+                if (spawnTimer <= 0) {
+                    spawnWave();
+                    spawnTimer = randomRange(SPAWN_MIN, SPAWN_MAX);
+                }
+
+                fruits.forEach((fruit) => {
+                    fruit.vy += GRAVITY * delta;
+                    fruit.x += fruit.vx * delta;
+                    fruit.y += fruit.vy * delta;
+                    fruit.rotation += fruit.spin * delta * 1000;
+                });
+
+                for (let i = fruits.length - 1; i >= 0; i -= 1) {
+                    const fruit = fruits[i];
+                    if (fruit.y - fruit.radius > canvas.height + 60) {
+                        fruits.splice(i, 1);
+                        if (!fruit.sliced) {
+                            loseLife();
+                        }
+                    }
+                }
+
+                fragments.forEach((piece) => {
+                    piece.vy += GRAVITY * delta * 0.55;
+                    piece.x += piece.vx * delta;
+                    piece.y += piece.vy * delta;
+                    piece.rotation += piece.spin * delta * 1000;
+                    piece.alpha -= delta * 0.35;
+                });
+                for (let i = fragments.length - 1; i >= 0; i -= 1) {
+                    if (fragments[i].alpha <= 0 || fragments[i].y > canvas.height + 120) {
+                        fragments.splice(i, 1);
+                    }
+                }
+
+                sparks.forEach((spark) => {
+                    spark.vx *= 0.97;
+                    spark.vy += 520 * delta;
+                    spark.x += spark.vx * delta;
+                    spark.y += spark.vy * delta;
+                    spark.life -= delta;
+                });
+                for (let i = sparks.length - 1; i >= 0; i -= 1) {
+                    if (sparks[i].life <= 0) {
+                        sparks.splice(i, 1);
+                    }
+                }
+
+                handleTrail();
+                checkSlices();
+
+                if (comboTimer > 0) {
+                    comboTimer -= delta;
+                    if (comboTimer <= 0) {
+                        comboTimer = 0;
+                        comboBanner.textContent = "";
+                    }
+                }
+
+                if (screenFlash > 0) {
+                    screenFlash = Math.max(0, screenFlash - delta * 2.4);
+                    flash.style.opacity = screenFlash.toString();
+                }
+            }
+
+            function handleTrail() {
+                const now = performance.now();
+                for (let i = trail.length - 1; i >= 0; i -= 1) {
+                    if (now - trail[i].time > SLICE_WINDOW) {
+                        trail.splice(i, 1);
+                    }
+                }
+            }
+
+            function segmentCircleIntersect(p1, p2, cx, cy, radius) {
+                const abx = p2.x - p1.x;
+                const aby = p2.y - p1.y;
+                const acx = cx - p1.x;
+                const acy = cy - p1.y;
+                const abLenSq = abx * abx + aby * aby;
+                if (abLenSq === 0) {
+                    const dx = p1.x - cx;
+                    const dy = p1.y - cy;
+                    return dx * dx + dy * dy <= radius * radius;
+                }
+                const t = clamp((acx * abx + acy * aby) / abLenSq, 0, 1);
+                const closestX = p1.x + abx * t;
+                const closestY = p1.y + aby * t;
+                const distX = closestX - cx;
+                const distY = closestY - cy;
+                return distX * distX + distY * distY <= radius * radius;
+            }
+
+            function checkSlices() {
+                if (!slicingActive || trail.length < 2) {
+                    return;
+                }
+                const anglePoints = trail.slice(-2);
+                const angle = Math.atan2(
+                    anglePoints[1].y - anglePoints[0].y,
+                    anglePoints[1].x - anglePoints[0].x,
+                );
+                fruits.forEach((fruit) => {
+                    if (fruit.sliced) {
+                        return;
+                    }
+                    for (let i = 0; i < trail.length - 1; i += 1) {
+                        if (segmentCircleIntersect(trail[i], trail[i + 1], fruit.x, fruit.y, fruit.radius)) {
+                            fruit.sliced = true;
+                            sliceFruit(fruit, angle);
+                            break;
+                        }
+                    }
+                });
+                for (let i = fruits.length - 1; i >= 0; i -= 1) {
+                    if (fruits[i].sliced) {
+                        fruits.splice(i, 1);
+                    }
+                }
+            }
+
+            function sliceFruit(fruit, angle) {
+                updateScore(10);
+                spawnCombo();
+                createFragments(fruit, angle);
+                createSparks(fruit, fruit.variant.flesh, fruit.variant.glow);
+            }
+
+            function spawnCombo() {
+                const now = performance.now();
+                recentSlices.push(now);
+                while (recentSlices.length && now - recentSlices[0] > COMBO_WINDOW) {
+                    recentSlices.shift();
+                }
+                if (recentSlices.length >= 3) {
+                    const bonus = (recentSlices.length - 2) * 8;
+                    updateScore(bonus);
+                    comboBanner.textContent = `Combo x${recentSlices.length}! +${bonus}`;
+                    comboTimer = 1.6;
+                    screenFlash = Math.min(0.35, 0.15 + recentSlices.length * 0.05);
+                    flash.style.opacity = screenFlash.toString();
+                } else {
+                    comboBanner.textContent = "Nice slice!";
+                    comboTimer = 1;
+                }
+            }
+
+            function createFragments(fruit, angle) {
+                const spreadX = Math.cos(angle) * 110;
+                const spreadY = Math.sin(angle) * 80;
+                const baseSpeed = 280;
+                fragments.push({
+                    x: fruit.x - spreadX * 0.2,
+                    y: fruit.y - spreadY * 0.2,
+                    vx: fruit.vx - Math.cos(angle) * baseSpeed,
+                    vy: fruit.vy - Math.sin(angle) * baseSpeed,
+                    radius: fruit.radius,
+                    rotation: fruit.rotation,
+                    spin: -0.0028,
+                    alpha: 1,
+                    color: fruit.variant.flesh,
+                    skin: fruit.variant.skin,
+                    seeds: fruit.variant.seeds,
+                    side: -1,
+                });
+                fragments.push({
+                    x: fruit.x + spreadX * 0.2,
+                    y: fruit.y + spreadY * 0.2,
+                    vx: fruit.vx + Math.cos(angle) * baseSpeed,
+                    vy: fruit.vy + Math.sin(angle) * baseSpeed,
+                    radius: fruit.radius,
+                    rotation: fruit.rotation,
+                    spin: 0.0028,
+                    alpha: 1,
+                    color: fruit.variant.flesh,
+                    skin: fruit.variant.skin,
+                    seeds: fruit.variant.seeds,
+                    side: 1,
+                });
+            }
+
+            function createSparks(entity, color, glow) {
+                for (let i = 0; i < 26; i += 1) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 220 + Math.random() * 220;
+                    sparks.push({
+                        x: entity.x,
+                        y: entity.y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        color,
+                        glow,
+                        life: 0.45 + Math.random() * 0.35,
+                    });
+                }
+            }
+
+            function drawFruit(fruit) {
+                ctx.save();
+                ctx.translate(fruit.x, fruit.y);
+                ctx.rotate(fruit.rotation);
+                const gradient = ctx.createRadialGradient(
+                    -fruit.radius * 0.3,
+                    -fruit.radius * 0.4,
+                    fruit.radius * 0.2,
+                    0,
+                    0,
+                    fruit.radius,
+                );
+                gradient.addColorStop(0, "#ffffff");
+                gradient.addColorStop(0.25, fruit.variant.skin);
+                gradient.addColorStop(1, "#1a0c1f");
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, fruit.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = fruit.variant.glow;
+                ctx.globalAlpha = 0.45;
+                ctx.beginPath();
+                ctx.arc(-fruit.radius * 0.35, -fruit.radius * 0.35, fruit.radius * 0.45, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = "#2b7b3e";
+                ctx.fillRect(-4, -fruit.radius - 14, 8, 20);
+                ctx.restore();
+            }
+
+            function drawFragment(fragment) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, fragment.alpha);
+                ctx.translate(fragment.x, fragment.y);
+                ctx.rotate(fragment.rotation + (fragment.side === -1 ? -Math.PI / 12 : Math.PI / 12));
+                ctx.beginPath();
+                const startAngle = fragment.side === -1 ? Math.PI * 1.02 : -Math.PI * 0.02;
+                const endAngle = fragment.side === -1 ? Math.PI * 1.98 : Math.PI * 0.98;
+                ctx.fillStyle = fragment.color;
+                ctx.arc(0, 0, fragment.radius, startAngle, endAngle, fragment.side === -1);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = fragment.skin;
+                ctx.globalAlpha = 0.75;
+                ctx.beginPath();
+                ctx.arc(0, 0, fragment.radius, startAngle, startAngle + (fragment.side === -1 ? 0.18 : -0.18), fragment.side === -1);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                ctx.fillStyle = fragment.seeds;
+                for (let i = 0; i < 4; i += 1) {
+                    const seedAngle = (i / 4) * Math.PI * fragment.side;
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        Math.cos(seedAngle) * fragment.radius * 0.35,
+                        Math.sin(seedAngle) * fragment.radius * 0.22,
+                        3,
+                        6,
+                        seedAngle,
+                        0,
+                        Math.PI * 2,
+                    );
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            function drawSparks() {
+                sparks.forEach((spark) => {
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, spark.life * 2);
+                    const gradient = ctx.createRadialGradient(spark.x, spark.y, 0, spark.x, spark.y, 16);
+                    gradient.addColorStop(0, spark.color);
+                    gradient.addColorStop(1, "rgba(255,255,255,0)");
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(spark.x, spark.y, 16, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+            }
+
+            function drawTrail() {
+                if (trail.length < 2) {
+                    return;
+                }
+                ctx.save();
+                for (let i = 1; i < trail.length; i += 1) {
+                    const prev = trail[i - 1];
+                    const curr = trail[i];
+                    const progress = i / trail.length;
+                    const alpha = progress * 0.4;
+                    ctx.strokeStyle = `rgba(255, 180, 255, ${alpha.toFixed(3)})`;
+                    ctx.lineWidth = clamp(20 * progress, 6, 14);
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.y);
+                    ctx.lineTo(curr.x, curr.y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawCursor() {
+                if (!slicingActive) {
+                    return;
+                }
+                ctx.save();
+                ctx.globalAlpha = 0.4;
+                ctx.fillStyle = "rgba(255,255,255,0.08)";
+                ctx.beginPath();
+                ctx.arc(cursorX, cursorY, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.45)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                fruits.forEach(drawFruit);
+                fragments.forEach(drawFragment);
+                drawSparks();
+                drawTrail();
+                drawCursor();
+            }
+        });
+    </script>
+</body>
+</html>

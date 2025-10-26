@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aditi's App</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff6fb;
+            background-image: url("unicorn.png");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        header {
+            background: #ff9fc6;
+            color: #000;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem 3rem;
+        }
+
+        .app-card {
+            background-color: #ffffff;
+            background-image: url("elsa.jpg");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 20px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+            max-width: 420px;
+            width: 100%;
+            padding: 2rem 2.5rem 2.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .input-row {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            gap: 1.25rem;
+            flex-wrap: nowrap;
+        }
+
+        .input-box {
+            width: 90px;
+            height: 72px;
+            border-radius: 18px;
+            border: 3px solid #1f1f1f;
+            font-size: 1.75rem;
+            text-align: center;
+            outline: none;
+            background: #fef0f6;
+        }
+
+        .input-box:focus {
+            border-color: #ff6fa6;
+            box-shadow: 0 0 0 4px rgba(255, 111, 166, 0.35);
+        }
+
+        .result-panel {
+            width: 100%;
+            border-radius: 18px;
+            border: 3px solid #1f1f1f;
+            padding: 1.25rem 1rem;
+            background: #f2f2f2;
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 0.06em;
+        }
+
+        .result-panel span {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 0.35rem;
+        }
+
+        footer {
+            background: #000;
+            color: #fff;
+            text-align: center;
+            padding: 1rem;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+        }
+
+        @media (max-width: 500px) {
+            .app-card {
+                padding: 1.75rem;
+                border-radius: 16px;
+                gap: 1.25rem;
+            }
+
+            .input-box {
+                width: 80px;
+                height: 64px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>Aditi's App</header>
+    <main>
+        <section class="app-card" aria-labelledby="app-title">
+            <div class="input-row">
+                <input id="first-number" class="input-box" type="number" inputmode="decimal" aria-label="First number" placeholder="7" />
+                <input id="operator" class="input-box" type="text" maxlength="1" aria-label="Operator" placeholder="+" />
+                <input id="second-number" class="input-box" type="number" inputmode="decimal" aria-label="Second number" placeholder="9" />
+            </div>
+            <div class="result-panel" aria-live="polite" aria-atomic="true">
+                Result:
+                <span id="result">&nbsp;</span>
+            </div>
+        </section>
+    </main>
+    <footer>Helped by Mahesh</footer>
+
+    <script>
+        const firstNumberInput = document.getElementById("first-number");
+        const secondNumberInput = document.getElementById("second-number");
+        const operatorInput = document.getElementById("operator");
+        const resultField = document.getElementById("result");
+
+        const sanitizeNumber = (input) => {
+            const cleaned = input.value.replace(/[^0-9+\-\.]/g, "");
+            const signed = cleaned.replace(/(?!^)[+\-]/g, "");
+            const parts = signed.split(".");
+            const normalized = parts.length > 1 ? `${parts.shift()}.${parts.join("")}` : signed;
+
+            if (input.value !== normalized) {
+                input.value = normalized;
+            }
+        };
+
+        const sanitizeOperator = () => {
+            const match = operatorInput.value.match(/[+\-*]/);
+            operatorInput.value = match ? match[0] : "";
+        };
+
+        const computeResult = () => {
+            const firstRaw = firstNumberInput.value.trim();
+            const secondRaw = secondNumberInput.value.trim();
+            const operator = operatorInput.value.trim();
+
+            if (!firstRaw || !secondRaw || !/[+\-*]/.test(operator)) {
+                resultField.textContent = "\u00a0";
+                return;
+            }
+
+            const first = Number(firstRaw);
+            const second = Number(secondRaw);
+
+            if (!Number.isFinite(first) || !Number.isFinite(second)) {
+                resultField.textContent = "\u00a0";
+                return;
+            }
+
+            let outcome;
+            switch (operator) {
+                case "+":
+                    outcome = first + second;
+                    break;
+                case "-":
+                    outcome = first - second;
+                    break;
+                case "*":
+                    outcome = first * second;
+                    break;
+                default:
+                    outcome = "";
+            }
+
+            resultField.textContent = outcome;
+        };
+
+        const handleNumberInput = (event) => {
+            sanitizeNumber(event.target);
+            computeResult();
+        };
+
+        const handleOperatorInput = () => {
+            sanitizeOperator();
+            computeResult();
+        };
+
+        [firstNumberInput, secondNumberInput].forEach((input) => {
+            input.addEventListener("input", handleNumberInput);
+            input.addEventListener("change", handleNumberInput);
+        });
+
+        operatorInput.addEventListener("input", handleOperatorInput);
+        operatorInput.addEventListener("change", handleOperatorInput);
+    </script>
+</body>
+</html>
